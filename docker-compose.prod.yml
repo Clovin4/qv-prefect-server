@@ -1,0 +1,58 @@
+services:
+  reverse-proxy:
+    image: traefik:v3.1
+    command:
+      - "--providers.docker"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entryPoints.web.address=:80"
+      - "--entryPoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=your-email@example.com"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./letsencrypt:/letsencrypt
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - web
+    restart: always
+
+  watchtower:
+    image: containrrr/watchtower
+    command:
+      - "--label-enable"
+      - "--interval"
+      - "30"
+      - "--rolling-restart"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
+
+  prefect-ui:
+    image: prefecthq/prefect:3-latest
+    command: ["prefect", "server", "start", "--host", "0.0.0.0", "--port", "4200"]
+
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prefect.rule=Host(`workflows.mlworkshop.space`)"
+      - "traefik.http.routers.prefect.entrypoints=websecure"
+      - "traefik.http.routers.prefect.tls.certresolver=myresolver"
+      - "traefik.docker.network=web"
+    networks:
+      - web
+    environment:
+      - PREFECT_API_URL=http://workflows.mlworkshop.space:4200/api
+    ports:
+      - "4200:4200"
+    restart: always
+
+networks:
+  web:
+    driver: bridge
+
+volumes:
+  letsencrypt:

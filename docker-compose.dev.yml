@@ -1,0 +1,48 @@
+services:
+  reverse-proxy:
+    image: traefik:v3.1
+    command:
+      - "--providers.docker"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entryPoints.web.address=:80"
+      - "--entryPoints.websecure.address=:443"
+      # No ACME commands for local development
+    ports:
+      - "80:80"
+    volumes:
+      - ./traefik/traefik-dev.yml:/etc/traefik/traefik.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - web
+    restart: always
+
+  watchtower:
+    image: containrrr/watchtower
+    command:
+      - "--label-enable"
+      - "--interval"
+      - "30"
+      - "--rolling-restart"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
+
+  prefect-ui:
+    image: prefecthq/prefect:3-latest
+    command: ["prefect", "server", "start", "--host", "0.0.0.0", "--port", "4200"]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prefect.rule=Host(`localhost`)"
+      - "traefik.http.routers.prefect.entrypoints=web"
+      - "traefik.docker.network=web"
+    networks:
+      - web
+    environment:
+      - PREFECT_API_URL=http://localhost:4200/api
+    ports:
+      - "4200:4200"
+    restart: always
+
+networks:
+  web:
+    driver: bridge
