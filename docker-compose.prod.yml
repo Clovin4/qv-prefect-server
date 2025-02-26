@@ -1,4 +1,4 @@
-version: '3.9'
+version: '3.3'
 
 services:
   reverse-proxy:
@@ -51,6 +51,16 @@ services:
     ports:
       - "4200:4200"
     restart: always
+
+  prefect-worker:
+    image: prefecthq/prefect:3-latest
+    command: ["prefect", "worker", "start", "--pool", "my-work-pool"]
+    environment:
+      - PREFECT_API_URL=http://workflows.mlworkshop.space:4200/api
+    networks:
+      - web
+    restart: always
+
 
 networks:
   web:
