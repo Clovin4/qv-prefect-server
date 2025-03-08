@@ -52,9 +52,27 @@ services:
       - "4200:4200"
     restart: always
 
-  prefect-worker:
+  prefect-worker1:
     image: prefecthq/prefect:3-latest
     command: ["prefect", "worker", "start", "--pool", "my-work-pool"]
+    environment:
+      - PREFECT_API_URL=http://workflows.mlworkshop.space:4200/api
+    networks:
+      - web
+    restart: always
+
+  prefect-worker2:
+    image: prefecthq/prefect:3-latest
+    command: ["prefect", "worker", "start", "--pool", "noaa-etls"]
+    environment:
+      - PREFECT_API_URL=http://workflows.mlworkshop.space:4200/api
+    networks:
+      - web
+    restart: always
+
+  prefect-worker3:
+    image: prefecthq/prefect:3-latest
+    command: ["prefect", "worker", "start", "--pool", "stock-data-etls"]
     environment:
       - PREFECT_API_URL=http://workflows.mlworkshop.space:4200/api
     networks:
