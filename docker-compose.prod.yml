@@ -9,7 +9,7 @@ services:
       - "--entryPoints.web.address=:80"
       - "--entryPoints.websecure.address=:443"
       - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
-      - "--certificatesresolvers.myresolver.acme.email=your-email@example.com"
+      - "--certificatesresolvers.myresolver.acme.email=christian70401@gmail.com"
       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
     ports:
       - "80:80"
@@ -81,6 +81,8 @@ services:
 
   prefect-worker4:
     image: clovin4/worker:latest
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
     command: ["prefect", "worker", "start", "--pool", "custom-worker"]
     environment:
       - PREFECT_API_URL=http://workflows.mlworkshop.space:4200/api
