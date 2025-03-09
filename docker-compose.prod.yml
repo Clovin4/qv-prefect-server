@@ -79,6 +79,15 @@ services:
       - web
     restart: always
 
+  prefect-worker4:
+    image: clovin4/worker:latest
+    command: ["prefect", "worker", "start", "--pool", "custom-worker"]
+    environment:
+      - PREFECT_API_URL=http://workflows.mlworkshop.space:4200/api
+    networks:
+      - web
+    restart: always
+
 
 networks:
   web:
