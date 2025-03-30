@@ -64,7 +64,7 @@ services:
       - web
     environment:
       - PREFECT_API_URL=http://workflows.mlworkshop.space:4200/api
-      - PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://admin:admin@postgres:5432/prefectdb
+      - PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://prefect:prefect@postgres:5432/prefectdb
     deploy:
       mode: replicated
       replicas: 3
