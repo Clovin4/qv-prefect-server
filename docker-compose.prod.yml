@@ -74,7 +74,7 @@ services:
 
   prefect-worker1:
     image: prefecthq/prefect:3-latest
-    command: ["prefect", "worker", "start", "--pool", "local-process"]
+    command: ["prefect", "worker", "start", "-p", "local-process"]
     environment:
       - PREFECT_API_URL=http://workflows.mlworkshop.space:4200/api
     networks:
