@@ -4,16 +4,20 @@ services:
   reverse-proxy:
     image: traefik:v3.1
     command:
+      - "--api.insecure=true"
       - "--providers.docker"
       - "--providers.docker.exposedbydefault=false"
-      - "--entryPoints.web.address=:80"
       - "--entryPoints.websecure.address=:443"
       - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
       - "--certificatesresolvers.myresolver.acme.email=christian70401@gmail.com"
       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+      - "--entryPoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
     ports:
       - "80:80"
       - "443:443"
+      - "8080:8080"
     volumes:
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
       - ./letsencrypt:/letsencrypt
@@ -33,11 +37,23 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: always
 
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: prefect
+      POSTGRES_PASSWORD: prefect
+      POSTGRES_DB: prefect
+    ports:
+      - "5432:5432"
+    networks:
+      - web
+    restart: always
+
   prefect-ui:
-    image: prefecthq/prefect:3-latest
+    build:
+      context: ./prefect-ui
+      dockerfile: Dockerfile
     command: ["prefect", "server", "start", "--host", "0.0.0.0", "--port", "4200"]
-
-
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.prefect.rule=Host(`workflows.mlworkshop.space`)"
@@ -48,42 +64,17 @@ services:
       - web
     environment:
       - PREFECT_API_URL=http://workflows.mlworkshop.space:4200/api
+      - PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://admin:admin@postgres:5432/prefectdb
+    deploy:
+      mode: replicated
+      replicas: 3
     ports:
       - "4200:4200"
     restart: always
 
   prefect-worker1:
     image: prefecthq/prefect:3-latest
-    command: ["prefect", "worker", "start", "--pool", "my-work-pool"]
-    environment:
-      - PREFECT_API_URL=http://workflows.mlworkshop.space:4200/api
-    networks:
-      - web
-    restart: always
-
-  prefect-worker2:
-    image: prefecthq/prefect:3-latest
-    command: ["prefect", "worker", "start", "--pool", "noaa-etls"]
-    environment:
-      - PREFECT_API_URL=http://workflows.mlworkshop.space:4200/api
-    networks:
-      - web
-    restart: always
-
-  prefect-worker3:
-    image: prefecthq/prefect:3-latest
-    command: ["prefect", "worker", "start", "--pool", "stock-data-etls"]
-    environment:
-      - PREFECT_API_URL=http://workflows.mlworkshop.space:4200/api
-    networks:
-      - web
-    restart: always
-
-  prefect-worker4:
-    image: clovin4/worker:latest
-    labels:
-      - com.centurylinklabs.watchtower.enable=true
-    command: ["prefect", "worker", "start", "--pool", "custom-worker"]
+    command: ["prefect", "worker", "start", "--pool", "local-process"]
     environment:
       - PREFECT_API_URL=http://workflows.mlworkshop.space:4200/api
     networks:
@@ -97,3 +88,5 @@ networks:
 
 volumes:
   letsencrypt:
+
+  postgres_data:
